@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>move pixels</title>
+    <style>
+        body { margin: 0; display: flex; justify-content: center; align-items: center; height: 100vh; background-color: green; overflow: hidden; }
+        canvas { image-rendering: pixelated; }
+        #counters { position: absolute; top: 10px; right: 10px; color: white; font-size: 20px; text-align: right; }
+        .counter { margin: 5px 0; }
+    </style>
+</head>
+<body>
+    <canvas id="gameCanvas"></canvas>
+    <div id="counters">
+        <div id="brownCounter" class="counter">0</div>
+        <div id="pondCounter" class="counter">0</div>
+    </div>
+    <script>
+        const canvas = document.getElementById('gameCanvas'), ctx = canvas.getContext('2d'), brownCounterElement = document.getElementById('brownCounter'), pondCounterElement = document.getElementById('pondCounter');
+        const pixelSize = 15, speed = 15; let x = Math.floor(canvas.width / 2 / pixelSize) * pixelSize, y = Math.floor(canvas.height / 2 / pixelSize) * pixelSize, brownPixels = [], bluePondPixels = [], brownCounter = 0, pondCounter = 0;
+        canvas.width = Math.floor(window.innerWidth / pixelSize) * pixelSize, canvas.height = Math.floor(window.innerHeight / pixelSize) * pixelSize;
+
+        function generateBrownPixels() { for (let i = 0; i < 20; i++) brownPixels.push({ x: Math.floor(Math.random() * (canvas.width / pixelSize)) * pixelSize, y: Math.floor(Math.random() * (canvas.height / pixelSize)) * pixelSize }); }
+        function generateBluePondPixels() {
+            const pondWidth = 5, pondHeight = 5, edge = Math.floor(Math.random() * 4);
+            let startX = edge === 0 ? Math.floor(Math.random() * (canvas.width / pixelSize - pondWidth)) * pixelSize : edge === 1 ? Math.floor(Math.random() * (canvas.width / pixelSize - pondWidth)) * pixelSize : edge === 2 ? 0 : canvas.width - pondWidth * pixelSize;
+            let startY = edge === 0 ? 0 : edge === 1 ? canvas.height - pondHeight * pixelSize : edge === 2 ? Math.floor(Math.random() * (canvas.height / pixelSize - pondHeight)) * pixelSize : Math.floor(Math.random() * (canvas.height / pixelSize - pondHeight)) * pixelSize;
+            for (let i = 0; i < pondWidth; i++) for (let j = 0; j < pondHeight; j++) if (Math.random() > 0.3) bluePondPixels.push({ x: startX + i * pixelSize, y: startY + j * pixelSize });
+        }
+        function drawPixels(pixels, color) { ctx.fillStyle = color; pixels.forEach(pixel => ctx.fillRect(pixel.x, pixel.y, pixelSize, pixelSize)); }
+
+        document.addEventListener('keydown', event => {
+            if (event.key === 'e') { interactWithPond(); interactWithBrownPixel(); }
+            else {
+                let newX = x, newY = y;
+                if (event.key === 'w') newY -= speed; else if (event.key === 'a') newX -= speed; else if (event.key === 's') newY += speed; else if (event.key === 'd') newX += speed;
+                if (!brownPixels.some(pixel => newX === pixel.x && newY === pixel.y) && !bluePondPixels.some(pixel => newX === pixel.x && newY === pixel.y)) {
+                    x = Math.max(0, Math.min(canvas.width - pixelSize, newX)); y = Math.max(0, Math.min(canvas.height - pixelSize, newY));
+                }
+                ctx.clearRect(0, 0, canvas.width, canvas.height); drawPixels(brownPixels, '#D2691E'); drawPixels(bluePondPixels, '#4682B4'); ctx.fillStyle = 'white'; ctx.fillRect(x, y, pixelSize, pixelSize);
+            }
+        });
+
+        function interactWithPond() {
+            if (bluePondPixels.some(pixel => x === pixel.x && y === pixel.y)) {
+                setTimeout(() => {
+                    if (Math.random() < 0.125) pondCounterElement.textContent = `${++pondCounter}`; else {
+                        pondCounterElement.style.color = 'red'; setTimeout(() => pondCounterElement.style.color = 'white', 500);
+                    }
+                }, 2000);
+            }
+        }
+        function interactWithBrownPixel() {
+            const index = brownPixels.findIndex(pixel => Math.abs(x - pixel.x) <= pixelSize && Math.abs(y - pixel.y) <= pixelSize);
+            if (index !== -1) {
+                brownPixels.splice(index, 1); brownCounterElement.textContent = `${++brownCounter}`;
+                ctx.clearRect(0, 0, canvas.width, canvas.height); drawPixels(brownPixels, '#D2691E'); drawPixels(bluePondPixels, '#4682B4'); ctx.fillStyle = 'white'; ctx.fillRect(x, y, pixelSize, pixelSize);
+            }
+        }
+
+        generateBrownPixels(); generateBluePondPixels(); ctx.fillStyle = 'white'; ctx.fillRect(x, y, pixelSize, pixelSize); drawPixels(brownPixels, '#D2691E'); drawPixels(bluePondPixels, '#4682B4');
+        window.addEventListener('resize', () => {
+            canvas.width = Math.floor(window.innerWidth / pixelSize) * pixelSize; canvas.height = Math.floor(window.innerHeight / pixelSize) * pixelSize;
+            ctx.clearRect(0, 0, canvas.width, canvas.height); drawPixels(brownPixels, '#D2691E'); drawPixels(bluePondPixels, '#4682B4'); ctx.fillStyle = 'white'; ctx.fillRect(x, y, pixelSize, pixelSize);
+        });
+    </script>
+</body>
+</html>
